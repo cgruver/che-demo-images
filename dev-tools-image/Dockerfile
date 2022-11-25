@@ -1,0 +1,66 @@
+FROM registry.access.redhat.com/ubi9/ubi-minimal
+ARG MAVEN_VERSION=3.8.6
+ARG BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
+ARG JAVA_PACKAGE=java-17-openjdk-devel
+ARG MANDREL_VERSION=22.3.0.1-Final
+ARG USER_HOME_DIR="/home/user"
+ARG WORK_DIR="/projects"
+ARG GRAALVM_DIR=/opt/mandral
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+COPY --chown=0:0 entrypoint.sh /
+
+RUN microdnf --disableplugin=subscription-manager install -y glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c++ glibc-langpack-en openssl compat-openssl11 ca-certificates git tar which ${JAVA_PACKAGE} shadow-utils bash jq; \
+    microdnf update -y ; \
+    microdnf clean all ; \
+    mkdir -p ${USER_HOME_DIR} ; \
+    chown 1001 ${USER_HOME_DIR} ; \
+    chmod "g+rwX" ${USER_HOME_DIR} ; \
+    chown 1001:root ${USER_HOME_DIR} ; \
+    mkdir -p ${WORK_DIR} ; \
+    chown 1001 ${WORK_DIR} ; \
+    chmod "g+rwX" ${WORK_DIR} ; \
+    chown 1001:root ${WORK_DIR} ; \
+    echo "securerandom.source=file:/dev/urandom" >> /etc/alternatives/jre/lib/security/java.security ; \
+    mkdir -p /usr/share/maven /usr/share/maven/ref ; \
+    curl -fsSL -o /tmp/apache-maven.tar.gz ${BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz ; \
+    tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 ; \
+    rm -f /tmp/apache-maven.tar.gz ; \
+    ln -s /usr/share/maven/bin/mvn /usr/bin/mvn ; \
+    mkdir -p ${GRAALVM_DIR} ; \
+    TEMP_DIR="$(mktemp -d)"; \
+    curl -fsSL -o ${TEMP_DIR}/mandrel-java11-linux-amd64-${MANDREL_VERSION}.tar.gz https://github.com/graalvm/mandrel/releases/download/mandrel-${MANDREL_VERSION}/mandrel-java17-linux-amd64-${MANDREL_VERSION}.tar.gz ; \
+    tar xzf ${TEMP_DIR}/mandrel-java11-linux-amd64-${MANDREL_VERSION}.tar.gz -C ${GRAALVM_DIR} --strip-components=1 ; \
+    rm -rf "${TEMP_DIR}" ; \
+    TEMP_DIR="$(mktemp -d)"; \
+    cd "${TEMP_DIR}"; \
+    GH_VERSION="2.0.0"; \
+    GH_ARCH="linux_amd64"; \
+    GH_TGZ="gh_${GH_VERSION}_${GH_ARCH}.tar.gz"; \
+    GH_TGZ_URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/${GH_TGZ}"; \
+    GH_CHEKSUMS_URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_checksums.txt"; \
+    curl -sSLO "${GH_TGZ_URL}"; \
+    curl -sSLO "${GH_CHEKSUMS_URL}"; \
+    sha256sum --ignore-missing -c "gh_${GH_VERSION}_checksums.txt" 2>&1 | grep OK; \
+    tar -zxvf "${GH_TGZ}"; \
+    mv "gh_${GH_VERSION}_${GH_ARCH}"/bin/gh /usr/local/bin/; \
+    cd -; \
+    rm -rf "${TEMP_DIR}" ; \
+    TEMP_DIR="$(mktemp -d)" ; \
+    YQ_VER="$(basename $(curl -Ls -o /dev/null -w %{url_effective} https://github.com/mikefarah/yq/releases/latest))" ; \
+    curl -fsSL -o ${TEMP_DIR}/yq.tar.gz https://github.com/mikefarah/yq/releases/download/${YQ_VER}/yq_linux_amd64.tar.gz ; \
+    # wget -O ${TEMP_DIR}/yq.tar.gz https://github.com/mikefarah/yq/releases/download/${YQ_VER}/yq_linux_amd64.tar.gz ; \
+    tar -xzf ${TEMP_DIR}/yq.tar.gz -C ${TEMP_DIR} ; \
+    cp ${TEMP_DIR}/yq_linux_amd64 /usr/local/bin/yq ; \
+    chmod +x /usr/local/bin/yq ; \
+    chgrp -R 0 /home ; \
+    chmod -R g=u /etc/passwd /etc/group /home ; \
+    chmod +x /entrypoint.sh
+
+ENV MAVEN_HOME=/usr/share/maven
+ENV MAVEN_CONFIG="${USER_HOME_DIR}/.m2"
+ENV GRAALVM_HOME=${GRAALVM_DIR}
+ENV JAVA_HOME=/etc/alternatives/jre_11_openjdk
+ENV HOME=/home/user
+WORKDIR /projects
+ENTRYPOINT [ "/entrypoint.sh" ]
+CMD ["tail", "-f", "/dev/null"]
