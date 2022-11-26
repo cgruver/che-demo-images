@@ -6,6 +6,7 @@ ARG MANDREL_VERSION=22.3.0.1-Final
 ARG USER_HOME_DIR="/home/user"
 ARG WORK_DIR="/projects"
 ARG GRAALVM_DIR=/opt/mandral
+ARG OKD_RELEASE=4.11.0-0.okd-2022-11-19-050030
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 COPY --chown=0:0 entrypoint.sh /
 
@@ -52,8 +53,14 @@ RUN microdnf --disableplugin=subscription-manager install -y glibc-devel zlib-de
     tar -xzf ${TEMP_DIR}/yq.tar.gz -C ${TEMP_DIR} ; \
     cp ${TEMP_DIR}/yq_linux_amd64 /usr/local/bin/yq ; \
     chmod +x /usr/local/bin/yq ; \
+    rm -rf "${TEMP_DIR}" ; \
     chgrp -R 0 /home ; \
     chmod -R g=u /etc/passwd /etc/group /home ; \
+    TEMP_DIR="$(mktemp -d)" ; \
+    wget -O ${TEMP_DIR}/oc.tar.gz https://github.com/openshift/okd/releases/download/${OKD_RELEASE}/openshift-client-linux-${OKD_RELEASE}.tar.gz ; \
+    tar -xzf ${TEMP_DIR}/oc.tar.gz -C ${TEMP_DIR}/${OKD_RELEASE} ; \
+    chmod +x ${TEMP_DIR}/oc ; \
+    chmod +x ${TEMP_DIR}/kubectl ; \
     chmod +x /entrypoint.sh
 
 ENV MAVEN_HOME=/usr/share/maven
