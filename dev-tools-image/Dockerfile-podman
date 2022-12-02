@@ -15,18 +15,27 @@ ENV MAVEN_CONFIG="${USER_HOME_DIR}/.m2"
 ENV GRAALVM_HOME=${GRAALVM_DIR}
 ENV JAVA_HOME=/etc/alternatives/jre_17_openjdk
 ENV HOME=${USER_HOME_DIR}
+ENV _BUILDAH_STARTED_IN_USERNS="" BUILDAH_ISOLATION=chroot
 
-COPY --chown=0:0 entrypoint.sh /
-
-RUN dnf install -y glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c++ glibc-langpack-en openssl compat-openssl11 ca-certificates git tar which ${JAVA_PACKAGE} shadow-utils bash zsh wget jq podman; \
+RUN dnf install -y glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c++ glibc-langpack-en openssl compat-openssl11 ca-certificates git tar which ${JAVA_PACKAGE} shadow-utils bash zsh wget jq podman buildah skopeo fuse-overlayfs; \
     dnf update -y ; \
     dnf clean all ; \
     mkdir -p ${USER_HOME_DIR} ; \
     mkdir -p ${WORK_DIR} ; \
     chgrp -R 0 /home ; \
-    chmod -R g=u /etc/passwd /etc/group /etc/subuid /etc/subgid /home ${WORK_DIR}; \
+    # Setup for root-less podman
+    touch /etc/subgid /etc/subuid ; \
+    chmod -R g=u /etc/passwd /etc/group /etc/subuid /etc/subgid /home ${WORK_DIR} ; \
+    echo user:10000:65536 > /etc/subuid  ; \
+    echo user:10000:65536 > /etc/subgid ; \
     echo "securerandom.source=file:/dev/urandom" >> /etc/alternatives/jre/lib/security/java.security ; \
-    chmod +x /entrypoint.sh ; \
+    sed -i -e 's|^#mount_program|mount_program|g' -e '/additionalimage.*/a "/var/lib/shared",' /etc/containers/storage.conf ; \
+    mkdir -p /var/lib/shared/overlay-images /var/lib/shared/overlay-layers ; \
+    touch /var/lib/shared/overlay-images/images.lock ; \
+    touch /var/lib/shared/overlay-layers/layers.lock ; \
+    # Fuse does not work yet
+    mkdir -p "${HOME}"/.config/containers ; \
+    (echo '[storage]';echo 'driver = "vfs"') > "${HOME}"/.config/containers/storage.conf ; \
     # Install Maven
     TEMP_DIR="$(mktemp -d)"; \
     mkdir -p /usr/share/maven /usr/share/maven/ref ; \
