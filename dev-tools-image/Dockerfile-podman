@@ -24,7 +24,11 @@ RUN dnf install -y glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c
     mkdir -p ${USER_HOME_DIR} ; \
     mkdir -p ${WORK_DIR} ; \
     chgrp -R 0 /home ; \
+    #
     # Setup for root-less podman
+    #
+    setcap cap_setuid+ep /usr/bin/newuidmap ; \
+    setcap cap_setgid+ep /usr/bin/newgidmap ; \
     touch /etc/subgid /etc/subuid ; \
     chmod -R g=u /etc/passwd /etc/group /etc/subuid /etc/subgid /home ${WORK_DIR} ; \
     echo user:10000:65536 > /etc/subuid  ; \
@@ -37,20 +41,26 @@ RUN dnf install -y glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c
     # Fuse does not work yet
     mkdir -p "${HOME}"/.config/containers ; \
     (echo '[storage]';echo 'driver = "vfs"') > "${HOME}"/.config/containers/storage.conf ; \
+    #
     # Install Maven
+    #
     TEMP_DIR="$(mktemp -d)"; \
     mkdir -p /usr/share/maven /usr/share/maven/ref ; \
     curl -fsSL -o ${TEMP_DIR}/apache-maven.tar.gz ${BASE_URL}/apache-maven-${MAVEN_VERSION}-bin.tar.gz ; \
     tar -xzf ${TEMP_DIR}/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 ; \
     ln -s /usr/share/maven/bin/mvn /usr/bin/mvn ; \
     rm -rf "${TEMP_DIR}" ; \
+    #
     # Install Mandrel
+    #
     mkdir -p ${GRAALVM_DIR} ; \
     TEMP_DIR="$(mktemp -d)"; \
     curl -fsSL -o ${TEMP_DIR}/mandrel-java11-linux-amd64-${MANDREL_VERSION}.tar.gz https://github.com/graalvm/mandrel/releases/download/mandrel-${MANDREL_VERSION}/mandrel-java17-linux-amd64-${MANDREL_VERSION}.tar.gz ; \
     tar xzf ${TEMP_DIR}/mandrel-java11-linux-amd64-${MANDREL_VERSION}.tar.gz -C ${GRAALVM_DIR} --strip-components=1 ; \
     rm -rf "${TEMP_DIR}" ; \
+    #
     # Install Github CLI
+    #
     TEMP_DIR="$(mktemp -d)"; \
     cd "${TEMP_DIR}"; \
     GH_VERSION="2.0.0"; \
@@ -65,7 +75,9 @@ RUN dnf install -y glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c
     mv "gh_${GH_VERSION}_${GH_ARCH}"/bin/gh /usr/local/bin/; \
     cd -; \
     rm -rf "${TEMP_DIR}" ; \
+    #
     # Install YQ
+    #
     TEMP_DIR="$(mktemp -d)" ; \
     YQ_VER="$(basename $(curl -Ls -o /dev/null -w %{url_effective} https://github.com/mikefarah/yq/releases/latest))" ; \
     curl -fsSL -o ${TEMP_DIR}/yq.tar.gz https://github.com/mikefarah/yq/releases/download/${YQ_VER}/yq_linux_amd64.tar.gz ; \
@@ -73,7 +85,9 @@ RUN dnf install -y glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c
     cp ${TEMP_DIR}/yq_linux_amd64 /usr/local/bin/yq ; \
     chmod +x /usr/local/bin/yq ; \
     rm -rf "${TEMP_DIR}" ; \
+    #
     # Install OpenShift CLI
+    #
     TEMP_DIR="$(mktemp -d)" ; \
     curl -fsSL -o ${TEMP_DIR}/oc.tar.gz https://github.com/openshift/okd/releases/download/${OKD_RELEASE}/openshift-client-linux-${OKD_RELEASE}.tar.gz ; \
     tar -xzf ${TEMP_DIR}/oc.tar.gz -C ${TEMP_DIR} ; \
