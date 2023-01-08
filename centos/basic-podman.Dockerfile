@@ -7,7 +7,9 @@ ENV HOME=${USER_HOME_DIR}
 ENV _BUILDAH_STARTED_IN_USERNS=""
 ENV BUILDAH_ISOLATION=chroot
 
-RUN dnf install -y openssl compat-openssl11 git tar which shadow-utils bash zsh wget jq podman buildah skopeo; \
+# Note: compat-openssl11 & libbrotli are needed for che-code (Che build of VS Code)
+
+RUN dnf install -y openssl compat-openssl11 libbrotli git tar which shadow-utils bash zsh wget jq podman buildah skopeo; \
     dnf update -y ; \
     dnf clean all ; \
     mkdir -p ${USER_HOME_DIR} ; \
