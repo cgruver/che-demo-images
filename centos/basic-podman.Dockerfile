@@ -4,6 +4,7 @@ ARG USER_HOME_DIR="/home/user"
 ARG WORK_DIR="/projects"
 
 ENV HOME=${USER_HOME_DIR}
+ENV BUILDAH_ISOLATION=chroot
 
 # Note: compat-openssl11 & libbrotli are needed for che-code (Che build of VS Code)
 
@@ -18,6 +19,8 @@ RUN dnf install -y openssl compat-openssl11 libbrotli git tar which shadow-utils
     #
     setcap cap_setuid+ep /usr/bin/newuidmap ; \
     setcap cap_setgid+ep /usr/bin/newgidmap ; \
+    mkdir -p "${HOME}"/.config/containers ; \
+    (echo '[storage]';echo 'driver = "vfs"') > "${HOME}"/.config/containers/storage.conf ; \
     touch /etc/subgid /etc/subuid ; \
     chmod -R g=u /etc/passwd /etc/group /etc/subuid /etc/subgid /home ${WORK_DIR} ; \
     echo user:10000:65536 > /etc/subuid  ; \
