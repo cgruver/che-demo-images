@@ -4,8 +4,6 @@ ARG USER_HOME_DIR="/home/user"
 ARG WORK_DIR="/projects"
 
 ENV HOME=${USER_HOME_DIR}
-ENV _BUILDAH_STARTED_IN_USERNS=""
-ENV BUILDAH_ISOLATION=chroot
 
 # Note: compat-openssl11 & libbrotli are needed for che-code (Che build of VS Code)
 
