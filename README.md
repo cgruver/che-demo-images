@@ -40,3 +40,19 @@ sleep 5
 oc scale deployment devworkspace-webhook-server --replicas=1 -n openshift-operators
 oc scale deployment devworkspace-controller-manager --replicas=1 -n openshift-operators
 ```
+
+```bash
+[storage]
+driver = "overlay"
+rootless_storage_path = "/projects/podman"
+[storage.options.overlay]
+mountopt = "nodev,metacopy=on"
+```
+
+```bash
+FROM quay.io/cgruver0/che/podman-basic:latest
+
+USER root
+
+RUN dnf -y install java-17-openjdk-devel
+```

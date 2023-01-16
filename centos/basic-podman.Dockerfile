@@ -1,4 +1,5 @@
-FROM quay.io/centos/centos:stream9
+FROM registry.access.redhat.com/ubi9/ubi
+#FROM quay.io/centos/centos:stream9
 
 ARG USER_HOME_DIR="/home/user"
 ARG WORK_DIR="/projects"
