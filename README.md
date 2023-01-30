@@ -36,3 +36,7 @@ sleep 5
 oc scale deployment devworkspace-webhook-server --replicas=1 -n openshift-operators
 oc scale deployment devworkspace-controller-manager --replicas=1 -n openshift-operators
 ```
+
+```bash
+podman run -it --ipc none --net none registry.access.redhat.com/ubi9/ubi-minimal --log-level debug
+```
