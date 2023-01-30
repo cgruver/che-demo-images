@@ -5,11 +5,16 @@ Configuration and Custom Images for Eclipse Che
 Work In Progress
 
 ```bash
-podman login quay.io/cgruver0
+yarn set version latest
+WORK_DIR=$(mktemp -d)/che-plugin-registry
+git clone -b 7.60.x --single-branch https://github.com/eclipse-che/che-plugin-registry.git ${WORK_DIR}
+cp openvsx-sync.json ${WORK_DIR}
+cd ${WORK_DIR}
+./build.sh -o eclipse-che -r ${LOCAL_REGISTRY} -t che-code-vsx --offline
 
-export BUILDAH_FORMAT=docker
+rm -rf ${WORK_DIR}
 
-podman buildx build --arch=amd64 -t quay.io/cgruver0/che/devtools:amd64 .
+oc import-image che-plugin-registry:che-code-vsx --from=${LOCAL_REGISTRY}/eclipse-che/che-plugin-registry:che-code-vsx --confirm -n eclipse-che-images
 ```
 
 ```bash
@@ -19,7 +24,9 @@ labenv -k
 
 chectl update stable
 chectl server:deploy --platform openshift
-oc patch CheCluster eclipse-che -n eclipse-che --type merge --patch '{"spec":{"devEnvironments":{"disableContainerBuildCapabilities":false}}}'
+oc patch CheCluster eclipse-che -n eclipse-che --type merge --patch '{"spec":{"devEnvironments":{"disableContainerBuildCapabilities":false,"storage":{"pvcStrategy":"per-workspace"}}}}'
+oc patch CheCluster eclipse-che -n eclipse-che --type merge --patch '{"spec":{"components":{"pluginRegistry":{"openVSXURL":"","deployment":{"containers":[{"image":"image-registry.openshift-image-registry.svc:5000/eclipse-che-images/che-plugin-registry:che-code-vsx"}]}}}}}'
+
 ```
 
 Replace `registry.redhat.io/openshift4/ose-kube-rbac-proxy:v4.8` with `quay.io/openshift/origin-kube-rbac-proxy:4.12.0`
@@ -39,4 +46,15 @@ oc scale deployment devworkspace-controller-manager --replicas=1 -n openshift-op
 
 ```bash
 podman run -it --ipc none --net none registry.access.redhat.com/ubi9/ubi-minimal --log-level debug
+```
+
+```bash
+systemctl enable --now --user podman.socket
+systemctl status --user podman.socket
+
+systemctl --user daemon-reload
+
+loginctl enable-linger $USER
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+
 ```
