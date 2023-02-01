@@ -10,6 +10,9 @@ WORK_DIR=$(mktemp -d)/che-plugin-registry
 git clone -b 7.60.x --single-branch https://github.com/eclipse-che/che-plugin-registry.git ${WORK_DIR}
 cp openvsx-sync.json ${WORK_DIR}
 cd ${WORK_DIR}
+# BASH_PATH=$(which bash)
+# sed -i "s|\#\!/bin/bash|\#\!${BASH_PATH}|g" ./build.sh
+# sed -i "s|\#\!/bin/bash|\#\!${BASH_PATH}|g" ./build/dockerfiles/test_entrypoint.sh
 ./build.sh -o eclipse-che -r ${LOCAL_REGISTRY} -t che-code-vsx --offline
 
 rm -rf ${WORK_DIR}
@@ -28,8 +31,6 @@ oc patch CheCluster eclipse-che -n eclipse-che --type merge --patch '{"spec":{"d
 oc patch CheCluster eclipse-che -n eclipse-che --type merge --patch '{"spec":{"components":{"pluginRegistry":{"openVSXURL":"","deployment":{"containers":[{"image":"image-registry.openshift-image-registry.svc:5000/eclipse-che-images/che-plugin-registry:che-code-vsx"}]}}}}}'
 
 ```
-
-Replace `registry.redhat.io/openshift4/ose-kube-rbac-proxy:v4.8` with `quay.io/openshift/origin-kube-rbac-proxy:4.12.0`
 
 ```bash
 DW_OP=$(oc get csv -n openshift-operators | grep devworkspace-operator | cut -d" " -f1)

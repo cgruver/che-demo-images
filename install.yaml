@@ -78,6 +78,7 @@ spec:
       ARG USER_HOME_DIR="/home/user"
       ARG WORK_DIR="/projects"
       ARG MAVEN_VERSION=3.8.7
+      ARG QUARKUS_VERSION=2.16.0.Final
       ARG BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
       ARG JAVA_PACKAGE=java-17-openjdk-devel
       ARG MANDREL_VERSION=22.3.0.1-Final
@@ -91,18 +92,18 @@ spec:
       ENV MAVEN_CONFIG="${HOME}/.m2"
       ENV GRAALVM_HOME=${GRAALVM_DIR}
       ENV JAVA_HOME=/etc/alternatives/jre_17_openjdk
-      RUN microdnf --disableplugin=subscription-manager install -y openssl compat-openssl11 libbrotli git tar which shadow-utils bash zsh wget jq podman buildah skopeo glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c++ glibc-langpack-en ca-certificates ${JAVA_PACKAGE}; \
+      RUN microdnf --disableplugin=subscription-manager install -y openssl compat-openssl11 libbrotli git tar gzip zip unzip which shadow-utils bash zsh wget jq podman buildah skopeo glibc-devel zlib-devel gcc libffi-devel libstdc++-devel gcc-c++ glibc-langpack-en ca-certificates ${JAVA_PACKAGE}; \
           microdnf update -y ; \
           microdnf clean all ; \
           mkdir -p ${USER_HOME_DIR} ; \
           mkdir -p ${WORK_DIR} ; \
-          chgrp -R 0 /home ; \
+          mkdir -p /usr/local/bin ; \
           setcap cap_setuid+ep /usr/bin/newuidmap ; \
           setcap cap_setgid+ep /usr/bin/newgidmap ; \
           mkdir -p "${HOME}"/.config/containers ; \
           (echo '[storage]';echo 'driver = "vfs"') > "${HOME}"/.config/containers/storage.conf ; \
           touch /etc/subgid /etc/subuid ; \
-          chmod -R g=u /etc/passwd /etc/group /etc/subuid /etc/subgid /home ${WORK_DIR} ; \
+          chmod -R g=u /etc/passwd /etc/group /etc/subuid /etc/subgid ; \
           echo user:20000:65536 > /etc/subuid  ; \
           echo user:20000:65536 > /etc/subgid ; \
           TEMP_DIR="$(mktemp -d)" ; \
@@ -137,9 +138,15 @@ spec:
           cp ${TEMP_DIR}/yq_linux_amd64 /usr/local/bin/yq ; \
           chmod +x /usr/local/bin/yq ; \
           rm -rf "${TEMP_DIR}" ; \
-          curl -Ls https://sh.jbang.dev | bash -s - trust add https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/ ; \
-          curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio ; \
-          rm -rf /root/.jbang
+          mkdir -p /usr/local/libexec/lib ; \
+          mkdir /usr/local/libexec/bin ; \
+          curl -fsSL -o /usr/local/libexec/lib/quarkus-cli-${QUARKUS_VERSION}-runner.jar https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/${QUARKUS_VERSION}/quarkus-cli-${QUARKUS_VERSION}-runner.jar ; \
+          curl -fsSL -o /usr/local/libexec/bin/quarkus https://raw.githubusercontent.com/quarkusio/quarkus/${QUARKUS_VERSION}/devtools/cli/distribution/java-binary/bin/quarkus ; \
+          sed -i "s|__RUNNER_JAR__|quarkus-cli-${QUARKUS_VERSION}-runner.jar|g" /usr/local/libexec/bin/quarkus ; \
+          chmod +x /usr/local/libexec/bin/quarkus ; \
+          ln -s /usr/local/libexec/bin/quarkus /usr/local/bin/quarkus ; \
+          chgrp -R 0 /home ; \
+          chmod -R g=u /home ${WORK_DIR}
       USER 10001
       WORKDIR ${WORK_DIR}
   strategy:
