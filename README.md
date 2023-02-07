@@ -59,3 +59,54 @@ loginctl enable-linger $USER
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 
 ```
+
+```bash
+oc new-build -n eclipse-che-images --to='podman-basic:latest' -D - < ./basic-podman.Dockerfile
+oc new-build -n eclipse-che-images --to='quarkus:latest' -D - < ./quarkus-podman.Dockerfile
+```
+
+```yaml
+apiVersion: org.eclipse.che/v2
+kind: CheCluster
+metadata:
+  name: devspaces
+  namespace: devspaces
+spec:
+  components:
+    pluginRegistry:
+      openVSXURL: ''
+    cheServer:
+      debug: false
+      logLevel: INFO
+    database:
+      credentialsSecretName: postgres-credentials
+      externalDb: false
+      postgresDb: dbche
+      postgresHostName: postgres
+      postgresPort: '5432'
+      pvc:
+        claimSize: 1Gi
+    metrics:
+      enable: true
+  containerRegistry: {}
+  devEnvironments:
+    secondsOfRunBeforeIdling: -1
+    containerBuildConfiguration:
+      openShiftSecurityContextConstraint: container-build
+    disableContainerBuildCapabilities: false
+    defaultEditor: che-incubator/che-code/insiders
+    defaultComponents:
+      - container:
+          sourceMapping: /projects
+          image: >-
+            registry.redhat.io/devspaces/udi-rhel8@sha256:aa39ede33bcbda6aa2723d271c79ab8d8fd388c7dfcbc3d4ece745b7e9c84193
+        name: universal-developer-image
+    defaultNamespace:
+      autoProvision: true
+      template: <username>-devspaces
+    secondsOfInactivityBeforeIdling: 1800
+    storage:
+      pvcStrategy: per-workspace
+  gitServices: {}
+  networking: {}
+```
