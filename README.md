@@ -1,4 +1,4 @@
-# dev-spaces-config
+# Set Up for Eclipse Che / OpenShift Dev Spaces Demos
 
 Configuration and Custom Images for Eclipse Che
 
