@@ -17,5 +17,6 @@
     {"id": "eamodio.gitlens"},
     {"id": "streetsidesoftware.code-spell-checker"},
     {"id": "DavidAnson.vscode-markdownlint"},
-    {"id": "johnpapa.winteriscoming"}
+    {"id": "johnpapa.winteriscoming"},
+    {"id": "cnshenj.vscode-task-manager"}
 ]
